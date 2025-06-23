@@ -1,10 +1,13 @@
 export interface Profile {
   id: string;
-  wallet_address: string;
+  wallet_address?: string;
   username?: string;
   display_name?: string;
   bio?: string;
   avatar_url?: string;
+  email?: string;
+  provider?: 'wallet' | 'google' | 'discord';
+  provider_id?: string;
   links: Link[];
   nfts: NFT[];
   created_at: string;

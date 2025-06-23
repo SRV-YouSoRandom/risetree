@@ -31,18 +31,28 @@ export const useProfile = (walletAddress: string | null) => {
   };
 
   const createOrUpdateProfile = async (profileData: Partial<Profile>) => {
-    if (!walletAddress) return;
+    if (!walletAddress && !profileData.email) {
+      throw new Error('Either wallet address or email is required');
+    }
 
     setLoading(true);
     setError(null);
 
     try {
+      const dataToSave = {
+        ...profileData,
+        updated_at: new Date().toISOString(),
+      };
+
+      // If we have a wallet address, use it as the primary identifier
+      if (walletAddress) {
+        dataToSave.wallet_address = walletAddress.toLowerCase();
+      }
+
       const { data, error } = await supabase
         .from('profiles')
-        .upsert({
-          wallet_address: walletAddress.toLowerCase(),
-          ...profileData,
-          updated_at: new Date().toISOString(),
+        .upsert(dataToSave, {
+          onConflict: walletAddress ? 'wallet_address' : 'email',
         })
         .select()
         .single();
@@ -52,7 +62,9 @@ export const useProfile = (walletAddress: string | null) => {
       setProfile(data);
       return data;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save profile');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save profile';
+      setError(errorMessage);
+      console.error('Profile save error:', err);
       throw err;
     } finally {
       setLoading(false);
